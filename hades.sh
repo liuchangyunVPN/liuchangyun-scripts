@@ -88,7 +88,7 @@ install_dns() {
     PROXIED=false
 
     for i in ${!DOMAIN_NAME[@]}; do
-        if [ -z "${DOMAIN_CDNS[$i]}" ]; then
+        if [ "${DOMAIN_CDNS[$i]}" ]; then
             echo "[info] skip cdn domain " ${DOMAIN_NAME[$i]}
             continue
         fi
@@ -166,7 +166,7 @@ install_conf() {
     printf "%-${COLS}s\n" "=" | sed "s/ /=/g"
 
     for i in ${!DOMAIN_NAME[@]}; do
-        if [ -z "${DOMAIN_CDNS[$i]}" ]; then
+        if [ "${DOMAIN_CDNS[$i]}" ]; then
             echo "[info] skip cdn domain " ${DOMAIN_NAME[$i]}
             continue
         fi
@@ -332,7 +332,7 @@ output_result() {
     printf "\033[1m\033[43;42m%-${COLS}s\033[0m\n" "=" | sed "s/ /=/g"
 
     for i in ${!DOMAIN_NAME[@]}; do
-        if [ -z "${DOMAIN_CDNS[$i]}" ]; then
+        if [ "${DOMAIN_CDNS[$i]}" ]; then
             echo "[info] skip cdn domain " ${DOMAIN_NAME[$i]}
             continue
         fi
