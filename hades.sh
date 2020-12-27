@@ -72,9 +72,7 @@ install_dns() {
     printf "[step] domain\n"
     printf "%-${COLS}s\n" "=" | sed "s/ /=/g"
 
-    # Cloudflare TTL for record, between 120 and 86400 seconds
     CFTTL=120
-    # proxied
     PROXIED=false
 
     for i in ${!DOMAIN_NAME[@]}; do
@@ -231,6 +229,15 @@ server {
 }
 EOF
     done
+}
+
+# ====================================================================================================================================================================================
+# crontab
+# ====================================================================================================================================================================================
+install_cron() {
+    printf "%-${COLS}s\n" "=" | sed "s/ /=/g"
+    printf "[step] crontab\n"
+    printf "%-${COLS}s\n" "=" | sed "s/ /=/g"
 
     crontab -l >crontabfile
     CRON_INFO="0 5 * * * certbot renew >> /data/cron/cron.log"
@@ -252,6 +259,12 @@ install_docker() {
     printf "%-${COLS}s\n" "=" | sed "s/ /=/g"
 
     docker version >/dev/null || curl -fsSL get.docker.com | bash
+
+    if ! type docker >/dev/null 2>&1; then
+        echo '[error] docker not found !'
+        exit 1
+    fi
+
     service docker restart
     systemctl enable docker
 
@@ -317,12 +330,12 @@ output_result() {
 # ====================================================================================================================================================================================
 output_title() {
     if ! type gawk >/dev/null 2>&1; then
-        echo 'gawk 未安装'
+        echo '[info] gawk not found'
         install_software install gawk
     else
-        echo 'gawk 已安装'
+        echo '[info] gawk installed'
     fi
-    
+
     # sleep 1
     clear
     printf "%-${COLS}s\n" "=" | sed "s/ /=/g"
