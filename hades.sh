@@ -322,7 +322,7 @@ output_title() {
     else
         echo 'gawk 已安装'
     fi
-
+read -n 1
     clear
     printf "%-${COLS}s\n" "=" | sed "s/ /=/g"
     echo "= hades installer"
