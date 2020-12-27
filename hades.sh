@@ -1,3 +1,8 @@
+#!/bin/bash
+
+COLS=$(tput cols)
+ROWS=$(tput lines)
+
 # ====================================================================================================================================================================================
 # base 安装基本环境
 # ====================================================================================================================================================================================
@@ -208,10 +213,10 @@ EOF
 server {
     listen 80;
     listen [::]:80;
-    server_name     ${DOMAIN_NAME[$i]};
-    index           index.html index.htm;
-    root            /data/web;
-    error_page 400 = /400.html;
+    server_name             ${DOMAIN_NAME[$i]};
+    index                   index.html index.htm;
+    root                    /data/web;
+    error_page 400 =        /400.html;
     location /
     {
         proxy_redirect off;
@@ -271,6 +276,7 @@ install_docker() {
         -v /var/run/docker.sock:/var/run/docker.sock \
         containrrr/watchtower -c
 
+    echo "[info] docker setup finished"
 }
 
 # ====================================================================================================================================================================================
@@ -310,9 +316,7 @@ output_result() {
 # 显示标题
 # ====================================================================================================================================================================================
 output_title() {
-    install_software install gawk
     clear
-
     printf "%-${COLS}s\n" "=" | sed "s/ /=/g"
     echo "= hades installer"
     echo "= using package management ${PACKAGE_MANAGEMENT}"
@@ -392,8 +396,6 @@ identify_operate() {
             read -p "请输入节点DOCKER端口:" DOCKER_PORT[$i]
         done
     fi
-
-    # wget -q https://raw.githubusercontent.com/liuchangyunVPN/liuchangyun-scripts/main/table.sh && chmod 755 table.sh
 }
 
 # ====================================================================================================================================================================================
@@ -406,3 +408,8 @@ install_software() {
         echo "[info] ${package_name} is ${package_opt}ed."
     fi
 }
+
+if ! type gawk >/dev/null 2>&1; then
+    install_software install gawk
+fi
+clear
