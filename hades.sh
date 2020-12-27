@@ -231,7 +231,7 @@ EOF
 
     # 添加CDN节点nginx配置文件
     for i in ${!DOMAIN_NAME[@]}; do
-        if [ ${DOMAIN_CDNS[$i]} = false ]; then
+        if [ -z "${DOMAIN_CDNS[$i]}" ]; then
             echo "[info] skip normal domain " ${DOMAIN_NAME[$i]}
             continue
         fi
@@ -344,7 +344,7 @@ output_result() {
     printf "\033[1m\033[43;42m%-${COLS}s\033[0m\n" "=" | sed "s/ /=/g"
 
     for i in ${!DOMAIN_NAME[@]}; do
-        if [ ${DOMAIN_CDNS[$i]} = false ]; then
+        if [ -z "${DOMAIN_CDNS[$i]}" ]; then
             echo "[info] skip normal domain " ${DOMAIN_NAME[$i]}
             continue
         fi
@@ -444,7 +444,7 @@ identify_operate() {
         for ((i = 0; i < ${count}; i++)); do
             echo "第 $i 个节点配置:"
             read -p "请输入节点域名(不包含 http:// ):" DOMAIN_NAME[$i]
-            read -p "请输入CDN节点域名(非CDN请输入 false ):" DOMAIN_CDNS[$i]
+            read -p "请输入CDN节点域名(非CDN请留空):" DOMAIN_CDNS[$i]
             read -p "请输入节点ID:" DOCKER_NODE[$i]
             read -p "请输入节点DOCKER名字:" DOCKER_NAME[$i]
             read -p "请输入节点DOCKER端口:" DOCKER_PORT[$i]
