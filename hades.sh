@@ -316,6 +316,10 @@ output_result() {
 # 显示标题
 # ====================================================================================================================================================================================
 output_title() {
+    if ! type gawk >/dev/null 2>&1; then
+        install_software install gawk
+    fi
+
     clear
     printf "%-${COLS}s\n" "=" | sed "s/ /=/g"
     echo "= hades installer"
@@ -408,8 +412,3 @@ install_software() {
         echo "[info] ${package_name} is ${package_opt}ed."
     fi
 }
-
-if ! type gawk >/dev/null 2>&1; then
-    install_software install gawk
-fi
-clear
