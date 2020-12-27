@@ -15,7 +15,10 @@ install_base() {
     install_software upgrade
 
     install_software install epel-release
-    install_software install git curl vim
+    install_software install git
+    install_software install curl
+    install_software install vim
+    install_software install net-tools
 
     mkdir -p /data /data/cron /data/web
 
@@ -23,6 +26,11 @@ install_base() {
 
     setenforce 0
     sed -i "s/SELINUX=enforcing/SELINUX=disabled/g" "/etc/selinux/config"
+
+    systemctl stop firewalld
+    systemctl mask firewalld
+
+    echo "[info] setup base finished. \n"
 }
 
 # ====================================================================================================================================================================================
@@ -45,6 +53,8 @@ install_swap() {
     # else
     #     swapon /opt/swap/swapfile
     # fi
+
+    echo "[info] setup swap finished. \n"
 }
 
 # ====================================================================================================================================================================================
@@ -62,6 +72,8 @@ install_nginx() {
     done
     systemctl restart nginx
     systemctl enable nginx
+
+    echo "[info] setup nginx finished. \n"
 }
 
 # ====================================================================================================================================================================================
@@ -69,7 +81,7 @@ install_nginx() {
 # ====================================================================================================================================================================================
 install_dns() {
     printf "%-${COLS}s\n" "=" | sed "s/ /=/g"
-    printf "[step] domain\n"
+    printf "[step] domain dns\n"
     printf "%-${COLS}s\n" "=" | sed "s/ /=/g"
 
     CFTTL=120
@@ -91,7 +103,7 @@ install_dns() {
         echo "${DOMAIN_NAME[$i]}" >>$ID_FILE
 
         if [ "$CFRECORD_ID"x != x ]; then
-            echo "update dns record"
+            echo "[info] update dns record. "
             RESPONSE=$(
                 curl -s -X PUT "https://api.cloudflare.com/client/v4/zones/$CFZONE_ID/dns_records/$CFRECORD_ID" \
                     -H "Authorization: Bearer $CFAPI_KEY" \
@@ -100,7 +112,7 @@ install_dns() {
             )
             echo "response: $RESPONSE"
         else
-            echo "create dns record"
+            echo "[info] create dns record. "
             RESPONSE=$(
                 curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CFZONE_ID/dns_records" \
                     -H "Authorization: Bearer $CFAPI_KEY" \
@@ -111,14 +123,7 @@ install_dns() {
         fi
     done
 
-    echo "[info] wait for dns"
-    for ((time = 60; time > 0; time--)); do
-        min=$(($time / 60))
-        sec=$(($time % 60))
-        echo -ne "\r[info] wait ${min} min ${sec} sec      \r"
-        sleep 1
-    done
-    echo
+    echo "[info] setup domain dns finished. \n"
 }
 
 # ====================================================================================================================================================================================
@@ -148,6 +153,8 @@ install_cert() {
     fi
 
     ln -s /snap/bin/certbot /usr/bin/certbot
+
+    echo "[info] setup certbot finished. \n"
 }
 
 # ====================================================================================================================================================================================
@@ -164,10 +171,32 @@ install_conf() {
             continue
         fi
 
-        certbot certonly \
-            --nginx -n --agree-tos -w /data/web \
-            --email ${DOMAIN_MAIL} \
-            -d ${DOMAIN_NAME[$i]}
+        SUCCESS=false
+        WAITTIME=60
+        echo "[info] cert for domain " ${DOMAIN_NAME[$i]}
+        while [ ${SUCCESS} = false ]; do
+            certbot certonly \
+                --nginx -n --agree-tos -w /data/web \
+                --email ${DOMAIN_MAIL} \
+                -d ${DOMAIN_NAME[$i]}
+
+            if [ $? -ne 0 ]; then
+                SUCCESS=false
+                echo "[info] cert failed. "
+                echo "[info] wait for dns. "
+                for ((time = ${WAITTIME}; time > 0; time--)); do
+                    min=$(($time / 60))
+                    sec=$(($time % 60))
+                    echo -ne "\r[info] wait ${min} min ${sec} sec \r"
+                    sleep 1
+                done
+                echo
+            else
+                SUCCESS=true
+                WAITTIME=0
+                echo "[info] cert successed. "
+            fi
+        done
 
         echo /etc/nginx/conf.d/${DOMAIN_NAME[$i]}.conf
         cat >/etc/nginx/conf.d/${DOMAIN_NAME[$i]}.conf <<EOF
@@ -229,6 +258,8 @@ server {
 }
 EOF
     done
+
+    echo "[info] setup nginx config finished. \n"
 }
 
 # ====================================================================================================================================================================================
@@ -248,6 +279,8 @@ install_cron() {
         echo "${CRON_INFO}" >>crontabfile && crontab crontabfile && rm -f crontabfile
         echo "[info] cron added"
     fi
+
+    echo "[info] setup crontab finished. \n"
 }
 
 # ====================================================================================================================================================================================
@@ -289,7 +322,7 @@ install_docker() {
         -v /var/run/docker.sock:/var/run/docker.sock \
         containrrr/watchtower -c
 
-    echo "[info] docker setup finished"
+    echo "[info] setup docker finished"
 }
 
 # ====================================================================================================================================================================================
