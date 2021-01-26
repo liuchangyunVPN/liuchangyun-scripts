@@ -137,9 +137,9 @@ install_cert() {
     printf "[step] certbot\n"
     printf "%-${COLS}s\n" "=" | sed "s/ /=/g"
 
-    install_software install snapd
-
     if [ ${NEEDCERT} > 0 ]; then
+        install_software install snapd
+        
         if [ ${PACKAGE_MANAGEMENT} = "yum" ]; then
             systemctl enable --now snapd.socket
             ln -s /var/lib/snapd/snap /snap
