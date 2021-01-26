@@ -86,12 +86,15 @@ install_dns() {
 
     CFTTL=120
     PROXIED=false
+    NEEDCERT=0
 
     for i in ${!DOMAIN_NAME[@]}; do
         if [ "${DOMAIN_CDNS[$i]}" ]; then
             echo "[info] skip cdn domain " ${DOMAIN_NAME[$i]}
             continue
         fi
+
+        NEEDCERT=$(( $NEEDCERT + 1 ))
 
         ID_FILE=~/.cf-id_${DOMAIN_NAME[$i]}.txt
         echo "[info] updating zone_identifier & record_identifier"
@@ -136,25 +139,29 @@ install_cert() {
 
     install_software install snapd
 
-    if [ ${PACKAGE_MANAGEMENT} = "yum" ]; then
-        systemctl enable --now snapd.socket
-        ln -s /var/lib/snapd/snap /snap
+    if [ ${NEEDCERT} > 0 ]; then
+        if [ ${PACKAGE_MANAGEMENT} = "yum" ]; then
+            systemctl enable --now snapd.socket
+            ln -s /var/lib/snapd/snap /snap
 
-        snap wait system seed.loaded
-        snap install --classic certbot
+            snap wait system seed.loaded
+            snap install --classic certbot
+        fi
+
+        if [ ${PACKAGE_MANAGEMENT} = "apt" ]; then
+            snap install core
+            snap refresh core
+
+            snap wait system seed.loaded
+            snap install --classic certbot
+        fi
+
+        ln -s /snap/bin/certbot /usr/bin/certbot
+
+        echo "[info] setup certbot finished. \n"
+    else
+        echo "[info] certbot not need. \n"
     fi
-
-    if [ ${PACKAGE_MANAGEMENT} = "apt" ]; then
-        snap install core
-        snap refresh core
-
-        snap wait system seed.loaded
-        snap install --classic certbot
-    fi
-
-    ln -s /snap/bin/certbot /usr/bin/certbot
-
-    echo "[info] setup certbot finished. \n"
 }
 
 # ====================================================================================================================================================================================
