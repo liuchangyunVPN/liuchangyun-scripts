@@ -137,7 +137,7 @@ install_cert() {
     printf "[step] certbot\n"
     printf "%-${COLS}s\n" "=" | sed "s/ /=/g"
 
-    if [ ${NEEDCERT} > 0 ]; then
+    if [ ${NEEDCERT} -gt 0 ]; then
         install_software install snapd
         
         if [ ${PACKAGE_MANAGEMENT} = "yum" ]; then
