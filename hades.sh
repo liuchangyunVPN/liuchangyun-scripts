@@ -186,11 +186,12 @@ EOF
             chmod 600 /data/certbot/cloudflare-api-${DOMAIN_NAME[$i]#*.}.ini
 
             certbot certonly \
+                -n \
+                --agree-tos \
                 --dns-cloudflare \
                 --dns-cloudflare-credentials /data/certbot/cloudflare-api-${DOMAIN_NAME[$i]#*.}.ini  \
                 --dns-cloudflare-propagation-seconds 60 \
                 --email ${DOMAIN_MAIL} \
-                --agree-tos \
                 -d "*.${DOMAIN_NAME[$i]#*.}"
 
             if [ $? -ne 0 ]; then
@@ -207,7 +208,10 @@ EOF
         echo "[info] cert for domain " ${DOMAIN_NAME[$i]}
         while [ "${DOMAIN_CERT}" != "dns" ] && [ ${SUCCESS} = false ]; do
             certbot certonly \
-                --nginx -n --agree-tos -w /data/web \
+                -n \
+                --agree-tos \
+                --nginx \
+                -w /data/web \
                 --email ${DOMAIN_MAIL} \
                 -d ${DOMAIN_NAME[$i]}
 
