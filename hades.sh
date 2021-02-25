@@ -77,7 +77,7 @@ install_nginx() {
 }
 
 # ====================================================================================================================================================================================
-# dns
+# dns 設定DNS信息 將域名指向當前服務器IP
 # ====================================================================================================================================================================================
 install_dns() {
     printf "%-${COLS}s\n" "=" | sed "s/ /=/g"
@@ -139,7 +139,7 @@ install_cert() {
 
     if [ ${NEEDCERT} -gt 0 ]; then
         install_software install snapd
-        
+
         if [ ${PACKAGE_MANAGEMENT} = "yum" ]; then
             systemctl enable --now snapd.socket
             ln -s /var/lib/snapd/snap /snap
@@ -154,6 +154,9 @@ install_cert() {
 
             snap wait system seed.loaded
             snap install --classic certbot
+
+            snap set certbot trust-plugin-with-root=ok
+            snap install certbot-dns-cloudflare
         fi
 
         ln -s /snap/bin/certbot /usr/bin/certbot
@@ -178,10 +181,33 @@ install_conf() {
             continue
         fi
 
+        if [[ "${DOMAIN_CERT}" == 'dns' ]]; then
+            mkdir -p /data/certbot
+            cat >/data/certbot/cloudflare-api-${DOMAIN_NAME[$i]#*.}.ini <<EOF
+# Cloudflare API token used by Certbot
+dns_cloudflare_api_token = ${CFAPI_KEY}
+EOF
+            chmod 600 /data/certbot/cloudflare-api-${{DOMAIN_NAME[$i]#*.}.ini
+
+            certbot certonly \
+                --dns-cloudflare \
+                --dns-cloudflare-credentials /data/certbot/cloudflare-api-${DOMAIN_NAME[$i]#*.}.ini  \
+                --dns-cloudflare-propagation-seconds 60 \
+                -d "*.${DOMAIN_NAME[$i]#*.}"
+
+            if [ $? -ne 0 ]; then
+                printf "\033[1m\033[43;41m%-${COLS}s\033[0m\n" "=" | sed "s/ /=/g"
+                echo "[error] dns cert failed ."
+                printf "\033[1m\033[43;41m%-${COLS}s\033[0m\n" "=" | sed "s/ /=/g"
+                exit 1
+            fi
+        fi
+
         SUCCESS=false
+        RETRIES=false
         WAITTIME=60
         echo "[info] cert for domain " ${DOMAIN_NAME[$i]}
-        while [ ${SUCCESS} = false ]; do
+        while [ "${DOMAIN_CERT}" != "dns" ] && [ ${SUCCESS} = false ]; do
             certbot certonly \
                 --nginx -n --agree-tos -w /data/web \
                 --email ${DOMAIN_MAIL} \
@@ -205,13 +231,19 @@ install_conf() {
             fi
         done
 
+        if [ "${DOMAIN_CERT}" = "dns" ]; then
+            CERT_ROOT=${DOMAIN_NAME[$i]#*.}
+        else
+            CERT_ROOT=${DOMAIN_NAME[$i]}
+        fi
+
         echo /etc/nginx/conf.d/${DOMAIN_NAME[$i]}.conf
         cat >/etc/nginx/conf.d/${DOMAIN_NAME[$i]}.conf <<EOF
 server {
     listen 443 ssl http2;
     listen [::]:443 http2;
-    ssl_certificate         /etc/letsencrypt/live/${DOMAIN_NAME[$i]}/fullchain.pem;
-    ssl_certificate_key     /etc/letsencrypt/live/${DOMAIN_NAME[$i]}/privkey.pem;
+    ssl_certificate         /etc/letsencrypt/live/${CERT_ROOT}/fullchain.pem;
+    ssl_certificate_key     /etc/letsencrypt/live/${CERT_ROOT}/privkey.pem;
     ssl_protocols         TLSv1.1 TLSv1.2;
     ssl_ciphers           TLS13-AES-256-GCM-SHA384:TLS13-CHACHA20-POLY1305-SHA256:TLS13-AES-128-GCM-SHA256:TLS13-AES-128-CCM-8-SHA256:TLS13-AES-128-CCM-SHA256:EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+ECDSA+AES128:EECDH+aRSA+AES128:RSA+AES128:EECDH+ECDSA+AES256:EECDH+aRSA+AES256:RSA+AES256:EECDH+ECDSA+3DES:EECDH+aRSA+3DES:RSA+3DES:!MD5;
     server_name           ${DOMAIN_NAME[$i]};
