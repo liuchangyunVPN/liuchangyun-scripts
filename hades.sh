@@ -183,7 +183,7 @@ install_conf() {
 # Cloudflare API token used by Certbot
 dns_cloudflare_api_token = ${CFAPI_KEY}
 EOF
-            chmod 600 /data/certbot/cloudflare-api-${{DOMAIN_NAME[$i]#*.}.ini
+            chmod 600 /data/certbot/cloudflare-api-${DOMAIN_NAME[$i]#*.}.ini
 
             certbot certonly \
                 --dns-cloudflare \
