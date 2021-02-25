@@ -143,22 +143,18 @@ install_cert() {
         if [ ${PACKAGE_MANAGEMENT} = "yum" ]; then
             systemctl enable --now snapd.socket
             ln -s /var/lib/snapd/snap /snap
-
-            snap wait system seed.loaded
-            snap install --classic certbot
         fi
 
         if [ ${PACKAGE_MANAGEMENT} = "apt" ]; then
             snap install core
             snap refresh core
-
-            snap wait system seed.loaded
-            snap install --classic certbot
-
-            snap set certbot trust-plugin-with-root=ok
-            snap install certbot-dns-cloudflare
         fi
 
+        snap wait system seed.loaded
+        snap install --classic certbot
+
+        snap set certbot trust-plugin-with-root=ok
+        snap install certbot-dns-cloudflare
         ln -s /snap/bin/certbot /usr/bin/certbot
 
         echo "[info] setup certbot finished. \n"
