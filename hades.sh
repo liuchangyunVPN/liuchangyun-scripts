@@ -189,6 +189,7 @@ EOF
                 --dns-cloudflare \
                 --dns-cloudflare-credentials /data/certbot/cloudflare-api-${DOMAIN_NAME[$i]#*.}.ini  \
                 --dns-cloudflare-propagation-seconds 60 \
+                --email ${DOMAIN_MAIL} \
                 -d "*.${DOMAIN_NAME[$i]#*.}"
 
             if [ $? -ne 0 ]; then
